@@ -50,6 +50,7 @@ def extract_from_bag(bag_fname):
         color_image = np.asanyarray(color_frame.get_data())
         color_image = cv2.cvtColor(color_image, cv2.COLOR_RGB2BGR)
 
+        # Save rgb images
         filename = f'{i:04d}.png'
         filepath = os.path.join(color_dir, filename)
         cv2.imwrite(filepath, color_image)
