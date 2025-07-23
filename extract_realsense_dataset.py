@@ -8,7 +8,9 @@ def extract_from_bag(bag_fname):
     base_name = os.path.splitext(os.path.basename(bag_fname))[0]
     output_dir = os.path.join(os.getcwd(), base_name)
     color_dir = os.path.join(output_dir, 'rgb')
+    depth_dir = os.path.join(output_dir, 'depth')
     os.makedirs(color_dir, exist_ok=True)
+    os.makedirs(depth_dir, exist_ok=True)
 
     depth_matrices = []
     timestamps = []
@@ -45,18 +47,22 @@ def extract_from_bag(bag_fname):
         if not aligned_depth_frame or not color_frame:
             continue
 
-        depth_image = np.asanyarray(aligned_depth_frame.get_data())
-        scaled_depth_image = depth_image * depth_scale
-        color_image = np.asanyarray(color_frame.get_data())
+        depth_image = np.asanyarray(aligned_depth_frame.get_data())  # uint16
+        scaled_depth_image = depth_image * depth_scale               # float32
+        color_image = np.asanyarray(color_frame.get_data())          
         color_image = cv2.cvtColor(color_image, cv2.COLOR_RGB2BGR)
 
-        # Save rgb images
+        # Save RGB image
         filename = f'{i:04d}.png'
-        filepath = os.path.join(color_dir, filename)
-        cv2.imwrite(filepath, color_image)
+        color_filepath = os.path.join(color_dir, filename)
+        cv2.imwrite(color_filepath, color_image)
+
+        # Save 16-bit raw depth image
+        depth_filepath = os.path.join(depth_dir, filename)
+        cv2.imwrite(depth_filepath, depth_image)
 
         # Get timestamp in seconds
-        timestamp = color_frame.get_timestamp() / 1000.0  # convert ms to seconds
+        timestamp = color_frame.get_timestamp() / 1000.0
         timestamps.append((timestamp, f'rgb/{filename}'))
 
         depth_matrices.append(scaled_depth_image.copy())
@@ -64,13 +70,15 @@ def extract_from_bag(bag_fname):
 
     pipeline.stop()
 
-    # Save depth data
+    # Save depth matrices as .npy
     np.save(os.path.join(output_dir, 'depth_matrices.npy'), np.array(depth_matrices))
 
-    # Save rgb.txt
+    # Save timestamps
     with open(os.path.join(output_dir, 'rgb.txt'), 'w') as f:
         for t, fname in timestamps:
-            f.write(f"{t:.5f} {fname}\n")
+            depth_name = fname.replace('rgb', 'depth') 
+            f.write(f"{t:.5f} {fname} {t:.5f} {depth_name}\n")
+
 
     print(f"Saved {i} frames and timestamps to '{output_dir}'")
 
@@ -79,4 +87,3 @@ if __name__ == '__main__':
     parser.add_argument('--bag', required=True, help='Path to the RealSense .bag file')
     args = parser.parse_args()
     extract_from_bag(args.bag)
-
