@@ -1,4 +1,4 @@
-# VSLAM Dataset Extractor
+# VSLAM-LAB Dataset Extractor
 
 Extract datasets from RealSense .bag files and video files for VSLAM-LAB.
 
